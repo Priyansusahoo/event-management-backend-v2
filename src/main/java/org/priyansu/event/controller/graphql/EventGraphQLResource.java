@@ -1,6 +1,7 @@
 package org.priyansu.event.controller.graphql;
 
 import io.quarkus.security.Authenticated;
+import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,6 +11,8 @@ import org.eclipse.microprofile.graphql.Mutation;
 import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 import org.priyansu.event.entity.Event;
+import org.priyansu.event.kafka.EventDTO;
+import org.priyansu.event.kafka.EventProducer;
 import org.priyansu.event.repository.EventRepository;
 
 import java.util.List;
@@ -22,6 +25,9 @@ public class EventGraphQLResource {
 
     @Inject
     EventRepository eventRepository;
+
+    @Inject
+    EventProducer eventProducer;
 
     @Query("allEvents")
     @RolesAllowed({"USER", "ADMIN"})
@@ -38,13 +44,22 @@ public class EventGraphQLResource {
     @Transactional
     @Mutation("createEvent")
     @RolesAllowed("ADMIN")
-    public Event createEvent(@Name("name") String name,
-                             @Name("description") String description,
-                             @Name("date") String date,
-                             @Name("location") String location,
-                             @Name("capacity") int capacity) {
+    public Uni<Event> createEvent(@Name("name") String name,
+                                  @Name("description") String description,
+                                  @Name("date") String date,
+                                  @Name("location") String location,
+                                  @Name("capacity") int capacity) {
         Event event = new Event(name, description, java.time.LocalDateTime.parse(date), location, capacity);
         eventRepository.persist(event);
-        return event;
+
+        EventDTO eventDTO = new EventDTO(event.getId(),
+                                         event.getName(),
+                                         event.getDescription(),
+                                         event.getDate().toString(),
+                                         event.getLocation(),
+                                         event.getCapacity());
+        /*eventProducer.publishEvent(eventDTO).subscribe().with(unused -> {}); // I addded ".subscribe().with(unused -> {})" to remove warning
+        return event;*/
+        return eventProducer.publishEvent(eventDTO).onItem().transform(unused -> event);
     }
 }
