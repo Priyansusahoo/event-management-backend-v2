@@ -93,6 +93,14 @@ mutation {
     }
   }
 }
+--------------------------------------------
+mutation {
+  createEvent(name: "Tech Meetup-2", description: "A meetup for developers",
+              date: "2025-02-20T10:00:00", location: "Bhubaneswar", capacity: 100) {
+    id
+    name
+  }
+}
 ```
 ### Header for the API's
 ```json
