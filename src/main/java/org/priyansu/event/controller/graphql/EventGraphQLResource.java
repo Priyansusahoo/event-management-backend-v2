@@ -1,6 +1,7 @@
 package org.priyansu.event.controller.graphql;
 
 import io.quarkus.security.Authenticated;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -44,6 +45,7 @@ public class EventGraphQLResource {
     @Transactional
     @Mutation("createEvent")
     @RolesAllowed("ADMIN")
+    @Blocking
     public Uni<Event> createEvent(@Name("name") String name,
                                   @Name("description") String description,
                                   @Name("date") String date,

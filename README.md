@@ -1,79 +1,126 @@
-# event-management-backend
+```bash
+docker run -d --name keycloak -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:latest start-dev
+```
+### After creating the keycloak container, we need to perform the below tasks: 
+        - visit localhost:8080/admin
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+        - create a new realm "event-management"
+        - create client("event-manager-backend", "event-manager-frontend"), and 
+        - create roles("ADMIN", "USER")
+        - also create few sample user for testing purpose for both "USER" and "ADMIN".
+        - Enable OpenID Connect for  both clients
+        - Add the roles to the user's
+        - provide root URL for "event-manager-backend" : http://localhost:8081
+        - enable client authentication for "event-manager-backend"
+        - enable "Direct Access Grants" for "event-manager-backend"
+        - enable "Service Accounts Enabled" for "event-manager-backend"
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+        - enable Valid Redirect URIs for "event-manager-frontend" : http://localhost:3000/
+        - enable Web Origins for "event-manager-frontend" : http://localhost:3000/
+        - enable "direct access grants" for "event-manager-frontend"
 
-## Running the application in dev mode
-
-You can run your application in dev mode that enables live coding using:
-
-```shell script
-./mvnw quarkus:dev
+```bash
+docker run --name postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -p 5432:5432 -d postgres
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
-
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./mvnw package
+```bash
+docker run --name postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -p 5432:5432 -d postgres
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+```bash
+docker exec -it postgres psql -U admin -c "CREATE DATABASE eventdb;"
+```
+```bash
+docker exec -it postgres psql -U admin -l
+```
+```bash
+docker exec -it postgres psql -U admin -d eventdb
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
 
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
+## Generate Token for user's
+### change the "client_secret", "username", "password" as per your configuration
+```bash
+curl -X POST 'http://localhost:8080/realms/event-management/protocol/openid-connect/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'client_id=event-manager-backend' \
+--data-urlencode 'client_secret=hZdjg84U38snYfObrwELG2pIQp0XIcwt' \
+--data-urlencode 'grant_type=password' \
+--data-urlencode 'username=priuansusahoo' \
+--data-urlencode 'password=Something@12345'
+```
+### Example queries for the API's
+```
+{
+  allEvents {
+    id
+    name
+    description
+    date
+    location
+    capacity
+  }
+}
+------------------------------------------
+mutation {
+  createEvent(name: "Java Conference", 
+              description: "A Java meetup",
+              date: "2025-05-01T10:00:00",
+              location: "Bangalore",
+              capacity: 100) {
+    id
+    name
+  }
+}
+--------------------------------------------
+{
+  allRegistrations {
+    id
+    userId
+    event {
+      name
+    }
+  }
+}
+--------------------------------------------
+mutation {
+  registerUser(eventId: 1, userId: "user123") {
+    id
+    userId
+    event {
+      name
+    }
+  }
+}
+```
+### Header for the API's
+```json
+{
+  "Authorization": "Bearer <Token>"
+}
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+## Kafka SetUp
+```bash
+docker network create kafka-network
+```
+```bash
+docker run -d --network kafka-network --name zookeeper -e ZOOKEEPER_CLIENT_PORT=2181 -e ALLOW_ANONYMOUS_LOGIN=yes bitnami/zookeeper
+```
+```bash
+docker run -d \
+  --network kafka-network \
+  --name kafka \
+  -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181 \
+  -e ALLOW_PLAINTEXT_LISTENER=yes \
+  -e KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092 \
+  -p 9092:9092 \
+  bitnami/kafka
 ```
 
-You can then execute your native executable with: `./target/event-management-backend-1.0.0-SNAPSHOT-runner`
+[//]: # (```bash)
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+[//]: # (docker run -d --network kafka-network --name kafka -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181 -e ALLOW_PLAINTEXT_LISTENER=yes -p 9092:9092 bitnami/kafka)
 
-## Related Guides
-
-- Hibernate ORM ([guide](https://quarkus.io/guides/hibernate-orm)): Define your persistent model with Hibernate ORM and Jakarta Persistence
-- Keycloak Authorization ([guide](https://quarkus.io/guides/security-keycloak-authorization)): Policy enforcer using Keycloak-managed permissions to control access to protected resources
-- Apache Kafka Client ([guide](https://quarkus.io/guides/kafka)): Connect to Apache Kafka with its native API
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- SmallRye GraphQL ([guide](https://quarkus.io/guides/smallrye-graphql)): Create GraphQL Endpoints using the code-first approach from MicroProfile GraphQL
-
-## Provided Code
-
-### Hibernate ORM
-
-Create your first JPA entity
-
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
-
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
-
-
-### SmallRye GraphQL
-
-Start coding with this Hello GraphQL Query
-
-[Related guide section...](https://quarkus.io/guides/smallrye-graphql)
+[//]: # (```)

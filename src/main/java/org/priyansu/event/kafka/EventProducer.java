@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage;
 @ApplicationScoped
 public class EventProducer {
 
-    @Channel("event-created")
+    @Channel("event-created-out")
     Emitter<EventDTO> eventDTOEmitter;
 
     public Uni<Void> publishEvent(EventDTO event) {
@@ -19,9 +19,5 @@ public class EventProducer {
                 .onFailure().invoke(throwable -> {
                     System.err.println("Failed to publish event: " + throwable.getMessage());
                 });
-        /*CompletionStage<Void> completionStage = eventDTOEmitter.send(event);
-        return Uni.createFrom().completionStage(completionStage);*/
-
-        /*return eventDTOEmitter.send(event).replaceWithVoid();*/ // not working
     }
 }
