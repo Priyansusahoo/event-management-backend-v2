@@ -1,0 +1,50 @@
+package org.priyansu.event.controller.graphql;
+
+import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.graphql.GraphQLApi;
+import org.eclipse.microprofile.graphql.Mutation;
+import org.eclipse.microprofile.graphql.Name;
+import org.eclipse.microprofile.graphql.Query;
+import org.priyansu.event.entity.Event;
+import org.priyansu.event.repository.EventRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+@GraphQLApi
+@ApplicationScoped
+@Authenticated
+public class EventGraphQLResource {
+
+    @Inject
+    EventRepository eventRepository;
+
+    @Query("allEvents")
+    @RolesAllowed({"USER", "ADMIN"})
+    public List<Event> getAllEvents() {
+        return eventRepository.listAll();
+    }
+
+    @Query("event")
+    @RolesAllowed({"USER", "ADMIN"})
+    public Optional<Event> getEvent(@Name("id") Long id) {
+        return eventRepository.findByIdOptional(id);
+    }
+
+    @Transactional
+    @Mutation("createEvent")
+    @RolesAllowed("ADMIN")
+    public Event createEvent(@Name("name") String name,
+                             @Name("description") String description,
+                             @Name("date") String date,
+                             @Name("location") String location,
+                             @Name("capacity") int capacity) {
+        Event event = new Event(name, description, java.time.LocalDateTime.parse(date), location, capacity);
+        eventRepository.persist(event);
+        return event;
+    }
+}

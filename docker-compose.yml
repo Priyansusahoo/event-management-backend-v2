@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: eventdb  # This automatically creates the database
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Optional: for additional initialization
+    networks:
+      - app-network
+
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      # Add these if you want Keycloak to use PostgreSQL
+      # KC_DB: postgres
+      # KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      # KC_DB_USERNAME: admin
+      # KC_DB_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    command: start-dev
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
