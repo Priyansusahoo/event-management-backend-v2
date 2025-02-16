@@ -1,4 +1,4 @@
-### (UPDATE) NOTE - Don't EXECUTE the "docker-compose.yml" file
+### DO NOT execute the "docker-compose.yml" file
 
 ## INSTRUCTIONS:
 
