@@ -47,10 +47,10 @@ docker exec -it postgres psql -U admin -d eventdb
 curl -X POST 'http://localhost:8080/realms/event-management/protocol/openid-connect/token' \
 --header 'Content-Type: application/x-www-form-urlencoded' \
 --data-urlencode 'client_id=event-manager-backend' \
---data-urlencode 'client_secret=hZdjg84U38snYfObrwELG2pIQp0XIcwt' \
+--data-urlencode 'client_secret=<SECRET-TOKEN-AVAILABLE-IN-CLIENTs-CREDENTIAL-TAB>' \
 --data-urlencode 'grant_type=password' \
---data-urlencode 'username=priuansusahoo' \
---data-urlencode 'password=Something@12345'
+--data-urlencode 'username=<USERNAME>' \
+--data-urlencode 'password=<PASSWORD>'
 ```
 ### Example queries for the API's
 ```
